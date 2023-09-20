@@ -76,12 +76,6 @@ def cj(w):
 
     return((w**2*h/g)-(h/(h+l)))*(1/Dj(w))+(h/(h+l))*(1/Dj(w))*(np.cosh(kj(w)*d)/np.cosh(kj(w)*h))
 
-def transfer(w):
-    p=-l
-    k=kj(w)
-    A=4*np.sinh(k*h)/(np.sinh(2*k*h)+2*k*h)
-    B=np.sinh(k*h)+((np.cosh(k*p)-np.cosh(k*h))/(k*(h-p)))
-    return A*B
     
 def K0p(w1,w2):
     return kj(w1+w2)[0]
@@ -216,7 +210,7 @@ def Fl(w1,w2):
     return El(w1,w2)*(parte1(w1,w2)+np.conjugate(parte2(w1,w2))+somatorioduplo(w1,w2))
 
 
-
+#DETERMINAÇÃO DOS PARES (bastante incompleto)
     
 w=np.linspace(1,2,11) 
 res = list(combinations(w, 2))
