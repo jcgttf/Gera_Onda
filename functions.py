@@ -68,12 +68,6 @@ def cj(w):
 
 def K0(w_n, w_m, sign_value):
     return kj(w_n + sign_value*w_m)[0]
-    
-def K0p(w1, w2):
-    return kj(w1+w2)[0]
-
-def K0l(w1,w2):
-    return kj(w1-w2)[0]
 
 def Hp(w1,w2,j,l):
     return (w1+w2)*(w1*w2-g**2*kj(w1)[j]*kj(w2)[l]/(w1*w2))+(w1**3+w2**3)/2-((g**2)/2)*(kj(w1)[j]**2/w1+kj(w2)[l]**2/w2)
@@ -87,13 +81,6 @@ def M1(w_n, w_m, sign_value):
     return ((1.0/(h+l)) * (g/(np.power(w_n+sign_value*w_m, 2))) \
             * ((np.cosh(K0(w_n, w_m, sign_value)*d) / np.cosh(K0(w_n, w_m, sign_value)*h)) - 1.0))
 
-def M1p(w1,w2):
-    
-    return ((1/(h+l))*(g/((w1+w2)**2))*((np.cosh(K0p(w1,w2)*d)/np.cosh(K0p(w1,w2)*h))-1))
-
-def M1l(w1,w2):
-    return ((1/(h+l))*(g/(epsilon+((w1-w2)**2)))*((np.cosh(K0l(w1,w2)*d)/np.cosh(K0l(w1,w2)*h))-1))
-
 def delta(w_n, w_m):
     """
     Function delta based in Equation (25b) from Schaffer (1996).
@@ -103,9 +90,6 @@ def delta(w_n, w_m):
         return 0.5
     else:
         return 1.0
-
-def El(w1,w2):
-    return ((delta(w1,w2)*K0l(w1,w2)**2*h)/(cj(w1)[0]*cj(w2)[0]*(w1-w2)**3*(1+M1l(w1,w2))))
 
 def M2(w_n, w_m, sign_value):
 
@@ -117,48 +101,6 @@ def M2(w_n, w_m, sign_value):
     Ch2p = -(np.power(k_j, 2) + np.power(K_0, 2)) * (((np.power(w_n, 2)*np.power(w_n+sign_value*w_m, 2)) / (g*g*k_j*K_0)) - (np.sinh(k_j*d)*np.sinh(K_0*d)) / (np.cosh(k_j*h)*np.cosh(K_0*h)))
     
     return -(g/(h+l)) * ((K_0/k_j)/(np.power(k_j, 2) - np.power(K_0, 2))) * (Ch1p + Ch2p)
-
-def M2p(w1,w2):
-    
-    Ch1p=2*kj(w1)*K0p(w1,w2)*(1-(np.cosh(kj(w1)*d)*np.cosh(K0p(w1,w2)*d))/(np.cosh(kj(w1)*h)*np.cosh(K0p(w1,w2)*h)))
-    Ch2p=-(kj(w1)**2+K0p(w1,w2)**2)*(((w1**2*(w1+w2)**2)/(g**2*kj(w1)*K0p(w1,w2)))-(np.sinh(kj(w1)*d)*np.sinh(K0p(w1,w2)*d))/(np.cosh(kj(w1)*h)*np.cosh(K0p(w1,w2)*h)))
-    return (-(g/(h+l))*((K0p(w1,w2)/kj(w1))/(kj(w1)**2-K0p(w1,w2)**2))*(Ch1p+Ch2p))
-
-def M2l(w1,w2):
-
-    Ch1l=2*kj(w1)*K0l(w1,w2)*(1-(np.cosh(kj(w1)*d)*np.cosh(K0l(w1,w2)*d))/(np.cosh(kj(w1)*h)*np.cosh(K0l(w1,w2)*h)))
-    Ch2l=-(kj(w1)**2+K0l(w1,w2)**2)*(((w1**2*(w1-w2)**2)/(g**2*kj(w1)*K0l(w1,w2)))-(np.sinh(kj(w1)*d)*np.sinh(K0l(w1,w2)*d))/(np.cosh(kj(w1)*h)*np.cosh(K0l(w1,w2)*h)))
-    return (-(g/(h+l))*((K0l(w1,w2)/kj(w1))/(kj(w1)**2-K0l(w1,w2)**2))*(Ch1l+Ch2l))
-
-
-
-
-def somatorio1(w1,w2):
-        soma=0
-        for i in range (0,modes):
-            a=cj(w1)[i]
-            b=kj(w1)[i]**2/(kj(w1)[i]**2-K0l(w1,w2)**2)
-            c=w1**2-(w1-w2)**2+M2l(w1,w2)[i]
-            d=cj(w2)[i]
-            e=kj(w2)[i]**2/(kj(w2)[i]**2-K0l(w2,w1)**2)
-            f=w2**2-(w2-w1)**2+M2l(w2,w1)[i]
-            soma=a*b*c+d*e*f+soma
-        return soma
-def parte1(w1,w2):
-        return (0.5*g/w1)*somatorio1(w1,w2)
-    
-def parte2(w1,w2):
-        return parte1(w2,w1)
-
-def somatorioduplo(w1,w2):
-        soma=0
-        for i in range(0,modes):
-            for l in range (0,modes):
-                a=cj(w1)[i]*np.conjugate(cj(w2)[l])
-                b=(kj(w1)[i]-np.conjugate(kj(w2)[l]))/((kj(w1)[i]-np.conjugate(kj(w2)[l]))**2-K0l(w1,w2)**2)
-                c=Hl(w1,w2,i,l)
-                soma=soma+a*b*c
-        return soma
 
 @np.vectorize
 def F(w_n, w_m, sign='+'):
@@ -244,37 +186,9 @@ def F(w_n, w_m, sign='+'):
     result = E(w_n, w_m, sign_value) * (-sign_value*(g/(2.0*w_n)) * SUM1(w_n, w_m) \
                                     -sign_value*(g/(2.0*w_m)) * SUM2(w_n, w_m) \
                                     + SUM3(w_n, w_m))
-    result = result/delta(w_n, w_m)
+    result = result/delta(w_n, w_m) # similar to Schaffer (1996)
 
     return result
-
-def Fl(w1,w2):
-    def somatorio1(w1,w2):
-        soma=0
-        for i in range (0,modes):
-            a=cj(w1)[i]
-            b=kj(w1)[i]**2/(kj(w1)[i]**2-K0l(w1,w2)**2)
-            c=w1**2-(w1-w2)**2+M2l(w1,w2)[i]
-            soma=a*b*c+soma
-        return soma
-    def parte1(w1,w2):
-        return (0.5*g/w1)*somatorio1(w1,w2)
-    
-    def parte2(w1,w2):
-        return parte1(w2,w1)
-
-    def somatorioduplo(w1,w2):
-        soma=0
-        for i in range(0,modes):
-            for l in range (0,modes):
-                a=cj(w1)[i]*np.conjugate(cj(w2)[l])
-                b=(kj(w1)[i]-np.conjugate(kj(w2)[l]))/((kj(w1)[i]-np.conjugate(kj(w2)[l]))**2-K0l(w1,w2)**2)
-                c=Hl(w1,w2,i,l)
-                soma=soma+a*b*c
-        return soma
-    
-    return El(w1,w2)*(parte1(w1,w2)+np.conjugate(parte2(w1,w2))+somatorioduplo(w1,w2))
-
 
 #DETERMINAÇÃO DOS PARES (bastante incompleto)
     
