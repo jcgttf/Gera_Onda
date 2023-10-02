@@ -9,13 +9,20 @@ Functions present in wavegenerator.functions are listed below.
 Functions
 ---------
 
-    kj
-    Dj
+    Name    Eq # (Schaffer (1996))
+    ----    ----------------------
+    kj      Equation (15)
+    Dj      Equation (21)
+    cj      Equation (20)
+    K0      Equation (33)
+    H       Equation (25d)
+    M1      Equation (41c)
+    delta   Equation (25b)
+    M_2     Equation (36b)
+    F       Equation (41a)
+    E       Equation (41b)
 
 """
-
-from itertools import combinations
-#from mpmath import *
 
 import numpy as np
 from scipy.optimize import fsolve
@@ -41,6 +48,9 @@ epsilon_2 = 1e-15
 modes = 10 # number of modes
 
 def kj(w):
+    """
+    Function k_j based in Equation (15) from Schaffer (1996).
+    """
 
     kjlist=[]
     
@@ -60,26 +70,47 @@ def kj(w):
 
     return np.asarray(kjlist, dtype = 'complex_')
 
-def Dj(w):
-    return(((kj(w)*h)/2)*(((kj(w)*h)/(np.sinh(kj(w)*h)*np.cosh(kj(w)*h)))+1))
+def Dj(k_j):
+    """
+    Function D_j based in Equation (21) from Schaffer (1996).
+    """
+    return (k_j*h/2.0) * (((k_j*h) / (np.sinh(k_j*h) * np.cosh(k_j*h))) + 1.0)
 
 def cj(w):
-    return((w**2*h/g)-(h/(h+l)))*(1/Dj(w))+(h/(h+l))*(1/Dj(w))*(np.cosh(kj(w)*d)/np.cosh(kj(w)*h))
+    """
+    Function c_j based in Equation (20) from Schaffer (1996).
+    """
+    k_j = kj(w)
+    D_j = Dj(k_j)
+
+    return ((w**2*h/g) - (h/(h+l))) * (1.0/D_j) + (h/(h+l)) * (1.0/D_j) * (np.cosh(k_j*d) / np.cosh(k_j*h))
 
 def K0(w_n, w_m, sign_value):
+    """
+    Function K^{+-}_{p} based in Equation (33) from Schaffer (1996).
+    """
     return kj(w_n + sign_value*w_m)[0]
 
-def Hp(w1,w2,j,l):
-    return (w1+w2)*(w1*w2-g**2*kj(w1)[j]*kj(w2)[l]/(w1*w2))+(w1**3+w2**3)/2-((g**2)/2)*(kj(w1)[j]**2/w1+kj(w2)[l]**2/w2)
+def H(w_n, w_m, j, l, sign_value):
+    """
+    Function H^{+-}_{jnlm} based in Equation (25d) from Schaffer (1996).
+    """
+    k_j_w_n = kj(w_n)
+    k_j_w_m = kj(w_m)
 
-def Hl(w1,w2,j,l):
-    return ((w1-w2)*(-w1*w2-g**2*kj(w1)[j]*np.conjugate(kj(w2)[l])/(w1*w2))+(w1**3-w2**3)/2-((g**2)/2)*(kj(w1)[j]**2/w1-kj(w2)[l]**2/w2))   
+    return (w_n + sign_value*w_m)*(sign_value*w_n*w_m - (g**2*k_j_w_n[j]*k_j_w_m[l])/(w_n*w_m))\
+                                    + ((w_n**3 + sign_value*w_m**3)/2.0) - ((g**2)/2.0) * ((k_j_w_n[j]**2/w_n) + sign_value*(k_j_w_m[l]**2/w_m))
 
 #Esses H estão dando valores muito altos, mas enfim, continuamos.
 
-def M1(w_n, w_m, sign_value):
+def M1(w_n, w_m, K_0, sign_value):
+    """
+    Function M_1 based in Equation (41c) from Schaffer (1996).
+    """
+    #K_0 = K0(w_n, w_m, sign_value)
+
     return ((1.0/(h+l)) * (g/(np.power(w_n+sign_value*w_m, 2))) \
-            * ((np.cosh(K0(w_n, w_m, sign_value)*d) / np.cosh(K0(w_n, w_m, sign_value)*h)) - 1.0))
+            * ((np.cosh(K_0*d) / np.cosh(K_0*h)) - 1.0))
 
 def delta(w_n, w_m):
     """
@@ -92,6 +123,9 @@ def delta(w_n, w_m):
         return 1.0
 
 def M2(w_n, w_m, sign_value):
+    """
+    Function M_2 based in Equation (36b) from Schaffer (1996).
+    """
 
     K_0 = K0(w_n, w_m, sign_value)
     k_j = kj(w_n)
@@ -128,15 +162,22 @@ def F(w_n, w_m, sign='+'):
     if sign=='+': sign_value = 1.0
     elif sign=='-': sign_value = -1.0
     
-    def E(w_n, w_m, sign_value):
-        return ((delta(w_n, w_m) * np.power(K0(w_n, w_m, sign_value), 2)*h) / (cj(w_n)[0] * cj(w_m)[0] * np.power(w_n+sign_value*w_m, 3)*(1.0+M1(w_n, w_m, sign_value))))
+    def E(w_n, w_m, sign_value, K_0, c_j_w_n, c_j_w_m):
+        """
+        Function E^{+-} based in Equation (41b) from Schaffer (1996).
+        """
+        #K_0 = K0(w_n, w_m, sign_value)
+        #c_j_w_n = cj(w_n)
+        #c_j_w_m = cj(w_m)
 
-    def SUM1(w_n, w_m):
+        return ((delta(w_n, w_m) * np.power(K_0, 2)*h) / (c_j_w_n[0] * c_j_w_m[0] * np.power(w_n+sign_value*w_m, 3)*(1.0+M1(w_n, w_m, K_0, sign_value))))
+
+    def SUM1(w_n, w_m, c_j_w_n, K_0_, k_j_w_n):
         sum_ = 0.0
 
-        c_j = cj(w_n)
-        k_j = kj(w_n)
-        K_0 = np.power(K0(w_n, w_m, sign_value), 2)
+        c_j = c_j_w_n #cj(w_n)
+        k_j = k_j_w_n #kj(w_n)
+        K_0 = np.power(K_0_, 2)
         M_2 = M2(w_n, w_m, sign_value)
         c_00 = np.power(w_n, 2) - np.power(w_n+w_m, 2)
 
@@ -148,12 +189,12 @@ def F(w_n, w_m, sign='+'):
 
         return sum_
     
-    def SUM2(w_n, w_m):
+    def SUM2(w_n, w_m, c_j_w_m, k_j_w_m, K_0_):
         sum_ = 0.0
 
-        c_j = cj(w_m)
-        k_j = kj(w_m)
-        K_0 = np.power(K0(w_m, w_n, sign_value), 2)
+        c_j = c_j_w_m #cj(w_m)
+        k_j = k_j_w_m #kj(w_m)
+        K_0 = np.power(K_0_, 2)
         M_2 = M2(w_m, w_n, sign_value)
         c_00 = np.power(w_m, 2) - np.power(w_n+w_m, 2)
 
@@ -165,71 +206,33 @@ def F(w_n, w_m, sign='+'):
 
         return sum_
 
-    def SUM3(w_n, w_m):
+    def SUM3(w_n, w_m, c_j_w_n, c_j_w_m, k_j_w_n, k_j_w_m, K_0_):
         sum_ = 0
 
-        c_j_w_n = cj(w_n)
-        c_j_w_m = cj(w_m)
-        k_j_w_n = kj(w_n)
-        k_j_w_m = kj(w_m)
-        K_0 = np.power(K0(w_n, w_m, sign_value), 2)
+        #c_j_w_n = cj(w_n)
+        #c_j_w_m = cj(w_m)
+        #k_j_w_n = kj(w_n)
+        #k_j_w_m = kj(w_m)
+        K_0 = np.power(K_0_, 2)
 
         for i in range(modes+1):
             for l in range (0,modes):
                 a = c_j_w_n[i] * c_j_w_m[l]
                 b = (k_j_w_n[i] + k_j_w_m[l]) / (np.power(k_j_w_n[i] + k_j_w_m[l], 2) - K_0)
-                c = Hp(w_n, w_m, i, l)
+                c = H(w_n, w_m, i, l, sign_value)
                 sum_ += a*b*c
 
         return sum_
     
-    result = E(w_n, w_m, sign_value) * (-sign_value*(g/(2.0*w_n)) * SUM1(w_n, w_m) \
-                                    -sign_value*(g/(2.0*w_m)) * SUM2(w_n, w_m) \
-                                    + SUM3(w_n, w_m))
+    c_j_w_n = cj(w_n)
+    c_j_w_m = cj(w_m)
+    k_j_w_n = kj(w_n)
+    k_j_w_m = kj(w_m)
+    K_0 = K0(w_n, w_m, sign_value)
+    
+    result = E(w_n, w_m, sign_value, K_0, c_j_w_n, c_j_w_m) * (-sign_value*(g/(2.0*w_n)) * SUM1(w_n, w_m, c_j_w_n, K_0, k_j_w_n) \
+                                    -sign_value*(g/(2.0*w_m)) * SUM2(w_n, w_m, c_j_w_m, k_j_w_m, K_0) \
+                                    + SUM3(w_n, w_m, c_j_w_n, c_j_w_m, k_j_w_n, k_j_w_m, K_0))
     result = result/delta(w_n, w_m) # similar to Schaffer (1996)
 
     return result
-
-#DETERMINAÇÃO DOS PARES (bastante incompleto)
-    
-w=np.linspace(1,2,11) 
-res = list(combinations(w, 2))
-pares=np.array(res, dtype = 'complex_')
-for i in w:
-    pares=np.append(pares,[[i,i]],axis=0)
-    
-
-for i in pares:
-    wn=i[0]
-    wm=i[1]
-
-
-#CÁLCULO PARA COMPUTAR ELEVAÇÃO DE PRIMEIRA E SEGUNDA ORDEM:
-
-    
-def Lp(w1,w2,j,l):
-    return 0.5*((g**2)*kj(w1)[j]*kj(w2)[l]/(w1*w2)-w1*w2-(w1**2+w2**2))
-
-def Ll(w1,w2,j,l):
-    return 0.5*((g**2)*kj(w1)[j]*np.conjugate(kj(w2)[l])/(w1*w2)+w1*w2-(w1**2+w2**2))
-
-def Dp(w1,w2,j,l):
-    d=g*(kj(w1)[j]+kj(w2)[l])*np.tanh((kj(w1)[j]+kj(w2)[l])*h)-(w1+w2)**2
-    return d
-
-def Dl(w1,w2,j,l):
-    d=g*(kj(w1)[j]-np.conjugate(kj(w2)[l]))*np.tanh((kj(w1)[j]-np.conjugate(kj(w2)[l]))*h)-(w1-w2)**2
-    return d
-
-def Gp(w1,w2,j,l):
-    chaves=(w1+w2)*Hp(w1,w2,j,l)/Dp(w1,w2,j,l)-Lp(w1,w2,j,l)
-    return delta(w1,w2)*chaves/g
-
-def Gl(w1,w2,j,l):
-    chaves=(w1-w2)*Hl(w1,w2,j,l)/Dl(w1,w2,j,l)-Ll(w1,w2,j,l)
-    return delta(w1,w2)*chaves/g
-
-
-
-
-
